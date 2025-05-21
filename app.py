@@ -38,6 +38,5 @@ app = interfaz.app
 
 if __name__ == "__main__":
     # Obtener el puerto de las variables de entorno o usar 8000 por defecto
-    port = int(os.environ.get('PORT', 8000))
-    # Para Azure necesitamos exponer la aplicación directamente
-    interfaz.launch(server_name="0.0.0.0", server_port=port)
+port = int(os.environ.get("PORT", 8000))
+interfaz.launch(server_name="0.0.0.0", server_port=port)
