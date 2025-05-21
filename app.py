@@ -1,5 +1,6 @@
 import gradio as gr
 from modelo import BuscadorCarreras
+import os
 
 # Configuración
 RUTA_CSV = 'data.csv'
@@ -32,5 +33,11 @@ interfaz = gr.Interface(
     description="💡 Describe tus intereses, habilidades o aspiraciones profesionales para recibir recomendaciones personalizadas"
 )
 
+# Configuración para Azure App Service
+app = interfaz.app
+
 if __name__ == "__main__":
-    interfaz.launch(server_name="0.0.0.0", server_port=80)
+    # Obtener el puerto de las variables de entorno o usar 8000 por defecto
+    port = int(os.environ.get('PORT', 8000))
+    # Para Azure necesitamos exponer la aplicación directamente
+    interfaz.launch(server_name="0.0.0.0", server_port=port)
