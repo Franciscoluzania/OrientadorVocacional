@@ -33,4 +33,4 @@ interfaz = gr.Interface(
 )
 
 if __name__ == "__main__":
-    interfaz.launch(server_name="0.0.0.0", server_port=8000)
+    interfaz.launch()
