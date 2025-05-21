@@ -12,7 +12,7 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: 'AppPython'
-  PYTHON_VERSION: '3.9'  # Azure App Service actualmente soporta hasta 3.10
+  PYTHON_VERSION: '3.13'  # Azure App Service actualmente soporta hasta 3.10
 
 jobs:
   build:
