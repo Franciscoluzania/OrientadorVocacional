@@ -1,6 +1,8 @@
+from flask import Flask, request, jsonify
 import gradio as gr
 from modelo import BuscadorCarreras
-import os
+
+app = Flask(__name__)
 
 # Configuración
 RUTA_CSV = 'data.csv'
@@ -17,6 +19,7 @@ def clasificar_carrera(texto):
             output += f"{i}. {carrera} (Score: {puntaje:.2f})\n"
         return output.strip()
 
+# Crear interfaz Gradio
 interfaz = gr.Interface(
     fn=clasificar_carrera,
     inputs=gr.Textbox(
@@ -33,10 +36,21 @@ interfaz = gr.Interface(
     description="💡 Describe tus intereses, habilidades o aspiraciones profesionales para recibir recomendaciones personalizadas"
 )
 
-# Configuración para Azure App Service
-app = interfaz.app
+# Integrar Gradio con Flask
+@app.route("/gradio", methods=["GET", "POST"])
+def gradio_interface():
+    return interfaz.launch(server_name="0.0.0.0", server_port=8000, prevent_thread_lock=True)
+
+# API endpoint alternativo
+@app.route("/api/recomendar", methods=["POST"])
+def api_recomendar():
+    data = request.json
+    texto = data.get("texto", "")
+    return jsonify({"recomendaciones": clasificar_carrera(texto)})
+
+@app.route("/")
+def home():
+    return "Bienvenido al Orientador de Carreras. Accede a /gradio para la interfaz interactiva."
 
 if __name__ == "__main__":
-    # Obtener el puerto de las variables de entorno o usar 8000 por defecto
-port = int(os.environ.get("PORT", 8000))
-interfaz.launch(server_name="0.0.0.0", server_port=port)
+    app.run(host="0.0.0.0", port=8000)
