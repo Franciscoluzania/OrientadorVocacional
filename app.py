@@ -1,22 +1,24 @@
+from fastapi import FastAPI
 import gradio as gr
 from modelo import BuscadorCarreras
+from gradio.routes import mount_gradio_app
+import os
 
-# Configuración
-RUTA_CSV = 'data.csv'
+# Cargar el modelo
+RUTA_CSV = os.path.join(os.path.dirname(__file__), 'data.csv')
 modelo = BuscadorCarreras(RUTA_CSV)
 
+# Función de predicción
 def clasificar_carrera(texto):
     resultados = modelo.buscar_carreras(texto)
-   
     if isinstance(resultados, str):
-        return resultados  # Mensaje de no coincidencias
-    else:
-        output = ""
-        for i, (carrera, puntaje) in enumerate(resultados, 1):
-            output += f"{i}. {carrera} (Score: {puntaje:.2f})\n"
-        return output.strip()
+        return resultados
+    return "\n".join([
+        f"{i+1}. {carrera} (Score: {puntaje:.2f})"
+        for i, (carrera, puntaje) in enumerate(resultados)
+    ])
 
-# Configuración de la interfaz
+# Crear interfaz Gradio
 interfaz = gr.Interface(
     fn=clasificar_carrera,
     inputs=gr.Textbox(
@@ -33,10 +35,25 @@ interfaz = gr.Interface(
     description="💡 Describe tus intereses, habilidades o aspiraciones profesionales para recibir recomendaciones personalizadas"
 )
 
-# Configuración especial para Azure
-app = interfaz.app
+# Crear app FastAPI
+app = FastAPI()
 
-# Esto es necesario para que Azure lo reconozca como una aplicación WSGI
+@app.get("/")
+def home():
+    return {"mensaje": "La aplicación está funcionando. Visita /gradio para la interfaz"}
+
+# Montar Gradio en /gradio
+app = mount_gradio_app(app, interfaz, path="/gradio")
+
+# Para Azure: este objeto será tomado por gunicorn
+application = app
+
+# Para local
+if __name__ == "__main__":
+    import uvicorn
+    print("Ejecutando servidor local en http://localhost:8000 ...")
+    uvicorn.run("app:application", host="0.0.0.0", port=8000, reload=True)
+ como una aplicación WSGI
 def get_app():
     return app
 
