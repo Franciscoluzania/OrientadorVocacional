@@ -72,14 +72,39 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_DD39528ED97F4C46A3F0E17E331A5863 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E3FEA844A5044E738D70ADED21419B80 }}
 
-      - name: Configure Python 3.12 runtime
+      - name: Configure Python Runtime (with Conflict Handling)
         run: |
-          az webapp config set \
-            --name NombreDeTuApp \
-            --resource-group MiGrupoRecursos \
-            --linux-fx-version "PYTHON|3.12" \
-            --always-on true
-          sleep 15  # Espera para evitar conflictos con SCM
+          # Configuración con reintentos automáticos
+          max_retries=3
+          retry_delay=20
+          
+          for ((attempt=1; attempt<=$max_retries; attempt++)); do
+            echo "⌛ Attempt $attempt of $max_retries"
+            
+            if az webapp config set \
+              --name NombreDeTuApp \
+              --resource-group MiGrupoRecursos \
+              --linux-fx-version "PYTHON|3.12" \
+              --always-on true; then
+              
+              echo "✅ Configuration successful"
+              az webapp config show \
+                --name NombreDeTuApp \
+                --resource-group MiGrupoRecursos \
+                --query "linuxFxVersion"
+              break
+            else
+              if [ $attempt -eq $max_retries ]; then
+                echo "❌ All attempts failed"
+                exit 1
+              fi
+              echo "⚠️ Conflict detected, retrying in $retry_delay seconds..."
+              sleep $retry_delay
+            fi
+          done
+          
+          echo "🕒 Waiting 30 seconds for SCM stabilization..."
+          sleep 30
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
@@ -88,3 +113,4 @@ jobs:
           app-name: 'NombreDeTuApp'
           package: release.zip
           slot-name: 'Production'
+          clean: true
