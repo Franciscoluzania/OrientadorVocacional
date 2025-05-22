@@ -41,7 +41,7 @@ jobs:
 
       - name: Zip artifact for deployment
         run: |
-          zip -r release.zip . -x '*.git*' '*venv*' '*.github*' '*.env*'
+          zip -r release.zip . -x "**/.git/**" "**/venv/**" "**/.github/**" "**/*.env"
 
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
@@ -54,7 +54,6 @@ jobs:
     needs: build
     environment:
       name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write
       contents: read
@@ -74,7 +73,6 @@ jobs:
 
       - name: Configure Python Runtime (with Conflict Handling)
         run: |
-          # Configuración con reintentos automáticos
           max_retries=3
           retry_delay=20
           
