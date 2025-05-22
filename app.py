@@ -1,13 +1,15 @@
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, jsonify
 import gradio as gr
 from modelo import BuscadorCarreras
 
+# Inicializar Flask
 app = Flask(__name__)
 
-# Configuración
+# Configuración del modelo
 RUTA_CSV = 'data.csv'
 modelo = BuscadorCarreras(RUTA_CSV)
 
+# Función principal de recomendación
 def clasificar_carrera(texto):
     resultados = modelo.buscar_carreras(texto)
     if isinstance(resultados, str):
@@ -35,32 +37,22 @@ interfaz = gr.Interface(
     description="💡 Describe tus intereses, habilidades o aspiraciones profesionales para recibir recomendaciones personalizadas"
 )
 
-# Lanzar interfaz Gradio en un hilo separado
-@app.before_first_request
-def launch_gradio():
-    import threading
-    def run_gradio():
-        interfaz.launch(server_name="0.0.0.0", server_port=7860, show_api=False)
-    thread = threading.Thread(target=run_gradio)
-    thread.daemon = True
-    thread.start()
+# Montar Gradio dentro de la app Flask
+gradio_app = gr.mount_app(app, interfaz, path="/gradio")
 
-# Redirigir a la interfaz de Gradio
-@app.route("/gradio")
-def redireccionar_gradio():
-    return redirect("http://localhost:7860")
+# Ruta principal
+@app.route("/")
+def home():
+    return "Bienvenido al Orientador de Carreras. Accede a <a href='/gradio'>/gradio</a> para la interfaz interactiva."
 
-# API endpoint alternativo
+# API REST
 @app.route("/api/recomendar", methods=["POST"])
 def api_recomendar():
     data = request.json
     texto = data.get("texto", "")
     return jsonify({"recomendaciones": clasificar_carrera(texto)})
 
-@app.route("/")
-def home():
-    return "Bienvenido al Orientador de Carreras. Accede a /gradio para la interfaz interactiva."
-
+# Ejecutar la app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
 
