@@ -72,19 +72,22 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_DD39528ED97F4C46A3F0E17E331A5863 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E3FEA844A5044E738D70ADED21419B80 }}
 
-      - name: Configure Python 3.12 runtime
+      - name: Configure Python runtime
         run: |
           az webapp config set \
-          --name NombreDeTuApp \
-          --resource-group MiGrupoRecursos \
-          --linux-fx-version "PYTHON|3.12"
+            --name NombreDeTuApp \
+            --resource-group MiGrupoRecursos \
+            --linux-fx-version "PYTHON|3.12" \
+            --always-on true
+          
+          # Wait to avoid SCM conflicts
+          sleep 15
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@v2
         id: deploy-to-webapp
         with:
           app-name: 'NombreDeTuApp'
           package: release.zip
-          runtime-stack: 'PYTHON|3.12'
           slot-name: 'Production'
           
