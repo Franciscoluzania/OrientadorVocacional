@@ -71,7 +71,7 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_DD39528ED97F4C46A3F0E17E331A5863 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E3FEA844A5044E738D70ADED21419B80 }}
 
-      - name: Configure Python Runtime and alwaysOn (with retry)
+      - name: Configure Python Runtime (sin alwaysOn)
         run: |
           max_retries=3
           retry_delay=20
@@ -79,14 +79,15 @@ jobs:
 
           for ((attempt=1; attempt<=max_retries; attempt++)); do
             echo "⌛ Attempt $attempt of $max_retries to configure webapp"
-
-            az rest --method PATCH --uri "$resource_uri" --body '{ "properties": { "linuxFxVersion": "PYTHON|3.12", "alwaysOn": true } }' && break
-
+            if az rest --method PATCH --uri "$resource_uri" --body '{ "properties": { "linuxFxVersion": "PYTHON|3.12" } }'; then
+              echo "✅ Configuration successful"
+              az webapp config show --name NombreDeTuApp --resource-group MiGrupoRecursos --query "linuxFxVersion"
+              break
+            fi
             if [ $attempt -eq $max_retries ]; then
               echo "❌ Failed to configure webapp after $max_retries attempts"
               exit 1
             fi
-
             echo "⚠️ Conflict detected or error, retrying in $retry_delay seconds..."
             sleep $retry_delay
           done
@@ -96,6 +97,7 @@ jobs:
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
+        id: deploy-to-webapp
         with:
           app-name: 'NombreDeTuApp'
           package: release.zip
