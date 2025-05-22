@@ -76,7 +76,7 @@ jobs:
         run: |
           az webapp config set \
             --name NombreDeTuApp \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+             --resource-group MiGrupoRecursos \\
             --linux-fx-version "PYTHON|3.12"
 
       - name: Deploy to Azure Web App
