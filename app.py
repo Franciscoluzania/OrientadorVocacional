@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 import gradio as gr
 from modelo import BuscadorCarreras
 
@@ -10,9 +10,8 @@ modelo = BuscadorCarreras(RUTA_CSV)
 
 def clasificar_carrera(texto):
     resultados = modelo.buscar_carreras(texto)
-   
     if isinstance(resultados, str):
-        return resultados  # Mensaje de no coincidencias
+        return resultados
     else:
         output = ""
         for i, (carrera, puntaje) in enumerate(resultados, 1):
@@ -36,10 +35,20 @@ interfaz = gr.Interface(
     description="💡 Describe tus intereses, habilidades o aspiraciones profesionales para recibir recomendaciones personalizadas"
 )
 
-# Integrar Gradio con Flask
-@app.route("/gradio", methods=["GET", "POST"])
-def gradio_interface():
-    return interfaz.launch(server_name="0.0.0.0", server_port=8000, prevent_thread_lock=True)
+# Lanzar interfaz Gradio en un hilo separado
+@app.before_first_request
+def launch_gradio():
+    import threading
+    def run_gradio():
+        interfaz.launch(server_name="0.0.0.0", server_port=7860, show_api=False)
+    thread = threading.Thread(target=run_gradio)
+    thread.daemon = True
+    thread.start()
+
+# Redirigir a la interfaz de Gradio
+@app.route("/gradio")
+def redireccionar_gradio():
+    return redirect("http://localhost:7860")
 
 # API endpoint alternativo
 @app.route("/api/recomendar", methods=["POST"])
@@ -54,3 +63,4 @@ def home():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
+
