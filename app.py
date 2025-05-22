@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 import gradio as gr
 from modelo import BuscadorCarreras
 
@@ -21,29 +21,32 @@ def clasificar_carrera(texto):
         return output.strip()
 
 # Crear interfaz Gradio
-interfaz = gr.Interface(
-    fn=clasificar_carrera,
-    inputs=gr.Textbox(
-        label="Describe tus intereses, habilidades o lo que te gustaría estudiar:",
-        placeholder="Ej: Me gusta resolver problemas matemáticos y trabajar con tecnología..."
-    ),
-    outputs=gr.Textbox(label="Carreras recomendadas"),
-    examples=[
-        ["Disfruto programar y crear soluciones tecnológicas innovadoras"],
-        ["Me apasiona cuidar animales y entender los ecosistemas naturales"],
-        ["Soy bueno con los números y me gusta analizar datos"]
-    ],
-    title="Orientador de Carreras",
-    description="💡 Describe tus intereses, habilidades o aspiraciones profesionales para recibir recomendaciones personalizadas"
-)
+def create_gradio_app():
+    return gr.Interface(
+        fn=clasificar_carrera,
+        inputs=gr.Textbox(
+            label="Describe tus intereses, habilidades o lo que te gustaría estudiar:",
+            placeholder="Ej: Me gusta resolver problemas matemáticos y trabajar con tecnología..."
+        ),
+        outputs=gr.Textbox(label="Carreras recomendadas"),
+        examples=[
+            ["Disfruto programar y crear soluciones tecnológicas innovadoras"],
+            ["Me apasiona cuidar animales y entender los ecosistemas naturales"],
+            ["Soy bueno con los números y me gusta analizar datos"]
+        ],
+        title="Orientador de Carreras",
+        description="💡 Describe tus intereses, habilidades o aspiraciones profesionales para recibir recomendaciones personalizadas"
+    )
 
-# Montar Gradio dentro de la app Flask
-gradio_app = gr.mount_app(app, interfaz, path="/gradio")
-
-# Ruta principal
+# Ruta principal - ahora redirige directamente a Gradio
 @app.route("/")
 def home():
-    return "Bienvenido al Orientador de Carreras. Accede a <a href='/gradio'>/gradio</a> para la interfaz interactiva."
+    return redirect("/gradio")
+
+# Montar Gradio como una ruta de Flask
+@app.route("/gradio")
+def gradio_interface():
+    return create_gradio_app().launch(server_name="0.0.0.0", server_port=8000)
 
 # API REST
 @app.route("/api/recomendar", methods=["POST"])
@@ -52,7 +55,12 @@ def api_recomendar():
     texto = data.get("texto", "")
     return jsonify({"recomendaciones": clasificar_carrera(texto)})
 
-# Ejecutar la app
+# Configuración para Azure App Service
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    # Para desarrollo local
+    app.run()
+else:
+    # Para producción en Azure
+    gradio_app = create_gradio_app()
+    app = gr.mount_gradio_app(app, gradio_app, path="/gradio")
 
