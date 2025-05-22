@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 import gradio as gr
 from modelo import BuscadorCarreras
-from fastapi.staticfiles import StaticFiles
 import os
 
 # Cargar el modelo
@@ -41,25 +40,12 @@ interfaz = gr.Interface(
 # Crear app FastAPI
 app = FastAPI()
 
-# Montar archivos estáticos (necesario para Gradio en Azure)
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
 @app.get("/")
 def home():
     return {"mensaje": "La aplicación está funcionando. Visita /gradio para la interfaz"}
 
-# Montar Gradio en FastAPI (forma compatible con Azure)
+# Montar Gradio en FastAPI
 app = gr.mount_gradio_app(app, interfaz, path="/gradio")
 
-# Configuración específica para Azure
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-else:
-    # Para Azure Web App
-    application = app
-    uvicorn.run("app:application", host="0.0.0.0", port=8000, reload=True)
- como una aplicación WSGI
-def get_app():
-    return app
-
+# Para Azure Web App
+application = app
