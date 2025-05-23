@@ -1,51 +1,26 @@
-from fastapi import FastAPI
 import gradio as gr
-from modelo import BuscadorCarreras
-import os
 
-# Cargar el modelo
-RUTA_CSV = os.path.join(os.path.dirname(__file__), 'data.csv')
-modelo = BuscadorCarreras(RUTA_CSV)
+def saludar(nombre):
+    return f"¡Hola, {nombre}! Bienvenido a tu app en Azure App Service"
 
-# Función de predicción
-def clasificar_carrera(texto):
-    try:
-        resultados = modelo.buscar_carreras(texto)
-        if isinstance(resultados, str):
-            return resultados
-        return "\n".join([
-            f"{i+1}. {carrera} (Score: {puntaje:.2f})"
-            for i, (carrera, puntaje) in enumerate(resultados)
-        ])
-    except Exception as e:
-        return f"Error al procesar la solicitud: {str(e)}"
+with gr.Blocks() as app:
+    gr.Markdown("# 🚀 Mi App con Gradio en Azure")
+    gr.Markdown("Esta es una aplicación sencilla desplegada en Azure App Service usando Gradio")
+    
+    with gr.Row():
+        nombre = gr.Textbox(label="¿Cómo te llamas?")
+        saludo = gr.Textbox(label="Saludo")
+    
+    btn = gr.Button("Saludar")
+    btn.click(fn=saludar, inputs=nombre, outputs=saludo)
+    
+    gr.Examples(
+        ["Juan", "María", "Carlos"],
+        inputs=nombre
+    )
 
-# Crear interfaz Gradio
-interfaz = gr.Interface(
-    fn=clasificar_carrera,
-    inputs=gr.Textbox(
-        label="Describe tus intereses, habilidades o lo que te gustaría estudiar:",
-        placeholder="Ej: Me gusta resolver problemas matemáticos y trabajar con tecnología..."
-    ),
-    outputs=gr.Textbox(label="Carreras recomendadas"),
-    examples=[
-        ["Disfruto programar y crear soluciones tecnológicas innovadoras"],
-        ["Me apasiona cuidar animales y entender los ecosistemas naturales"],
-        ["Soy bueno con los números y me gusta analizar datos"]
-    ],
-    title="Orientador de Carreras",
-    description="💡 Describe tus intereses, habilidades o aspiraciones profesionales para recibir recomendaciones personalizadas"
-)
+# Para Azure, necesitamos exponer la app como un objeto callable
+demo = app
 
-# Crear app FastAPI
-app = FastAPI()
-
-@app.get("/")
-def home():
-    return {"mensaje": "La aplicación está funcionando. Visita /gradio para la interfaz"}
-
-# Montar Gradio en FastAPI
-app = gr.mount_gradio_app(app, interfaz, path="/gradio")
-
-# Para Azure Web App
-application = app
+# Azure espera una variable llamada 'application' para el despliegue
+application = demo.launch(server_name="0.0.0.0", server_port=8000)
