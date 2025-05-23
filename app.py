@@ -1,9 +1,12 @@
+import threading
+from flask import Flask
 import gradio as gr
 
+# Definir interfaz Gradio
 def saludar(nombre):
     return f"Hola {nombre}! (App en plan F1)"
 
-app = gr.Interface(
+interfaz = gr.Interface(
     fn=saludar,
     inputs="text",
     outputs="text",
@@ -11,9 +14,22 @@ app = gr.Interface(
     description="Versión simplificada para plan gratuito"
 )
 
-# Configuración específica para Azure F1
+# Crear aplicación Flask para manejar la raíz
+flask_app = Flask(__name__)
+
+@flask_app.route("/")
+def home():
+    return "<h2>Bienvenido a la app Flask. Visita /gradio para abrir la interfaz Gradio.</h2>"
+
+# Lanzar Gradio en un hilo aparte
+def lanzar_gradio():
+    interfaz.launch(server_name="0.0.0.0", server_port=7860, share=False, inbrowser=False)
+
+# Ejecutar Flask como aplicación principal
 if __name__ == "__main__":
-    app.launch(server_name="0.0.0.0", server_port=8000, share=False)
+    threading.Thread(target=lanzar_gradio).start()
+    flask_app.run(host="0.0.0.0", port=8000)
 else:
-    # Para el despliegue en Azure
-    application = app
+    # Para Azure: gunicorn usará esta app
+    application = flask_app
+    threading.Thread(target=lanzar_gradio).start()
